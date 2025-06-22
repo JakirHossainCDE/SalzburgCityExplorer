@@ -117,13 +117,13 @@ const poisGeoJSONData = {
     ]
 };
 
-const salzachRiverWalkGeoJSONData = {
+const salzachTouristWalkGeoJSONData = {
     "type": "FeatureCollection",
     "features": [
         {
             "type": "Feature",
             "properties": {
-                "name": "Salzach River Walk",
+                "name": "Salzach Tourist Walk",
                 "description": "A pleasant walk along the Salzach river with views of the Old Town. Perfect for a leisurely stroll or a jog.",
                 "length_km": "Approx. 3.0",
                 "activity": "Walking, Jogging, Cycling"
@@ -131,7 +131,7 @@ const salzachRiverWalkGeoJSONData = {
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
-                    [13.0480, 47.8060], // Near Staatsbrücke
+                    [13.0480, 47.804742], // Near Staatsbrücke
                     [13.0460, 47.8040],
                     [13.0450, 47.8020], // Near Mozartsteg
                     [13.0440, 47.8000], // Near Makartsteg
