@@ -1,6 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
+<head><!DOCTYPE html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salzburg City Explorer - Interactive Map</title>
+    <!-- Chosen Palette: Calm Harmony (Blues for primary elements, Greens for routes, Ambers for areas, warm neutrals for background) -->
+    <!-- Application Structure Plan: The SPA is structured into a two-column layout on larger screens (Control Panel on left, Map on right) and a stacked layout on smaller screens. This architecture was chosen to provide a clear separation between interactive controls and the primary map visualization. The Control Panel acts as a dashboard, offering sections for city selection (fixed to Salzburg for this report), a list of key attractions for route planning, and dynamic route information. This design facilitates a task-oriented user flow: select attractions -> optimize route -> explore map. The map itself displays various GeoJSON layers (POIs, predefined routes, areas) managed via a Leaflet Layer Control, allowing users to customize their view. This structure enhances usability by centralizing controls and providing an immediate visual response on the map. -->
+    <!-- Visualization & Content Choices:
+    - Report Info: Geographical landmarks, points of interest (POIs), a predefined river walk route, and the Old Town area in Salzburg.
+    - Goal: Allow users to explore Salzburg's key features, understand their spatial distribution, and plan a basic optimized tour.
+    - Viz/Presentation Method:
+        - Interactive Map (Leaflet): Central visualization for all geospatial data.
+        - Custom HTML/CSS Markers (Font Awesome icons within styled divs): For individual attractions and POIs.
+        - GeoJSON LineStrings (Leaflet Layer): For the predefined Salzach River Walk route.
+        - GeoJSON Polygons (Leaflet Layer): For the Salzburg Old Town area.
+        - HTML List: For selectable "Top Attractions" for routing.
+        - Textual Displays: For route optimization details (distance, time).
+    - Interaction:
+        - Popups: Clicking on any map feature (attraction, POI, route, area) displays detailed information.
+        - Mouse-over Effects: Hovering over GeoJSON route lines or area polygons changes their style for visual feedback.
+        - Layer Control: A Leaflet Layer Control allows users to toggle the visibility of base maps and GeoJSON overlay layers (POIs, River Walk, Old Town Area).
+        - Attraction Selection: Clicking items in the "Top Attractions" list toggles their selection for route optimization.
+        - Route Optimization Button: Triggers calculation and display of an optimized route via Leaflet Routing Machine.
+        - Simulated Export Button: Demonstrates potential for map sharing.
+        - **New**: Slider to control the number of attractions displayed for route planning.
+        - **New**: Animated red point visualizing progress along the route during animation.
+    - Justification: Leaflet is ideal for interactive web maps. GeoJSON provides a structured way to represent spatial data. Custom markers and styled GeoJSON layers enhance personalization. The combination of selection, routing, layer control, slider-based filtering, and route animation provides a rich interactive experience tailored to geographical exploration and tour planning. The current report does not contain quantitative data suitable for Chart.js or Plotly.js, so these libraries are included via CDN as per technical requirements but not actively used for visualizations, ensuring the primary map focus.
+    - Library/Method: Leaflet.js, Leaflet Routing Machine, Font Awesome, Vanilla JavaScript, Tailwind CSS. Chart.js (CDN only, not used for visualization in this context due to data type). Plotly.js (CDN only, not used for visualization).
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Tailwind CSS CDN for responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS for map display -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Routing Machine Plugin CSS for route line styling -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <!-- Font Awesome for icons across the UI -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS for overall layout and styling -->
+    <link rel="stylesheet" href="salzburg-map-style.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Control Panel: Main interactive sidebar for user input and information display -->
+        <div id="control-panel">
+            <h1>Salzburg City Explorer</h1>
+            <p>Discover key attractions, explore predefined routes, and plan your optimized tour in Salzburg.</p>
+            
+            <!-- City Search Box - Fixed to Salzburg for this report -->
+            <div class="search-box">
+                <input type="text" id="city-input" placeholder="Enter city name (e.g., Salzburg)..." value="salzburg" disabled class="bg-gray-100 cursor-not-allowed">
+                <button id="search-btn" class="btn cursor-not-allowed opacity-70" disabled><i class="fas fa-search"></i> Search</button>
+            </div>
+            
+            <!-- Section for Top Attractions List - Allows users to select points for routing -->
+            <div class="section-title">Top Attractions for Route Planning</div>
+            <div id="attractions-filter">
+                <label for="attractions-range">Show Top <span id="num-attractions-display">10</span> Attractions:</label>
+                <input type="range" id="attractions-range" min="1" max="22" value="10" class="w-full mt-2">
+            </div>
+            <div id="attractions-list">
+                <!-- Attractions will be populated dynamically by JavaScript -->
+            </div>
+            
+            <!-- Route Information Display - Shows details about the optimized route -->
+            <div class="route-info">
+                <div class="info-row">
+                    <span class="info-label">Optimized Route:</span>
+                    <span id="route-name">Selected Highlights</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Total Distance:</span>
+                    <span id="route-distance">0 km</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Estimated Time:</span>
+                    <span id="route-time">0 mins</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Attractions Selected:</span>
+                    <span id="route-stops">0</span>
+                </div>
+                <!-- Buttons for Route Optimization and Map Export -->
+                <button id="optimize-btn" class="btn w-full mt-2">
+                    <i class="fas fa-route"></i> Optimize Route
+                </button>
+                <button id="animate-route-btn" class="btn w-full mt-2 btn-secondary">
+                    <i class="fas fa-play"></i> Animate Route
+                </button>
+                <button id="export-btn" class="btn btn-secondary w-full mt-2">
+                    <i class="fas fa-download"></i> Export Map (Simulated)
+                </button>
+            </div>
+        </div>
+        
+        <!-- Map Container: Holds the Leaflet map and a loading overlay -->
+        <div id="map-container">
+            <div id="map"></div>
+            <!-- Loading Overlay: Shown during data loading or route calculation -->
+            <div id="loading-overlay">
+                <div class="spinner"></div>
+                <div id="loading-text">Calculating optimal route...</div>
+            </div>
+            <!-- Custom Message Overlay -->
+            <div id="message-overlay" class="hidden">
+                <div id="message-box">
+                    <span id="message-text"></span>
+                    <button id="message-close-btn" class="message-close-btn">&times;</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS Library -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine Plugin JS for route calculation and display -->
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <!-- Chart.js (included as per instructions, but not explicitly used for visualization in this map context) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Plotly.js (updated to a recent version to avoid console warning) -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    
+    <!-- Custom JavaScript for map logic and interactivity -->
+    <script src="salzburg-map-script.js"></script>
+</body>
+</html>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Salzburg City Explorer - Interactive Map</title>
