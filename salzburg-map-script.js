@@ -143,6 +143,11 @@ const salzachTouristWalkGeoJSONData = {
     ]
 };
 
+
+
+
+
+
 const oldTownAreaGeoJSONData = {
     "type": "FeatureCollection",
     "features": [
@@ -156,7 +161,7 @@ const oldTownAreaGeoJSONData = {
             "geometry": {
                 "type": "Polygon",
                 "coordinates": [[
-                    [13.0480, 47.804742], // North-West corner
+                    [13.0440, 47.8025], // North-West corner
                     [13.0490, 47.8025], // North-East corner
                     [13.0490, 47.7970], // South-East corner
                     [13.0440, 47.7970], // South-West corner
