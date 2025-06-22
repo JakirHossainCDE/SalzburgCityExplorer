@@ -132,11 +132,11 @@ const salzachTouristWalkGeoJSONData = {
                 "type": "LineString",
                 "coordinates": [
                     [13.0480, 47.804742], // Near Staatsbrücke
-                    [13.0460, 47.8040],
+                    [13.047786, 47.804025],
                     [13.0450, 47.8020], // Near Mozartsteg
                     [13.0440, 47.8000], // Near Makartsteg
                     [13.0430, 47.7980], // Near Müllnersteg
-                    [13.0450, 47.7960]  // South of Old Town
+                    [13.046878, 47.797470]  // South of Old Town
                 ]
             }
         }
