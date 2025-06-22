@@ -286,7 +286,7 @@ const baseLayers = {
 
 const overlayLayers = {
     "Points of Interest": poisLayer,
-    "Salzach River Walk": salzachRiverWalkLayer,
+    "Salzburg Tourist Walk": salzachRiverWalkLayer,
     "Salzburg Old Town Area": oldTownAreaLayer
 };
 
