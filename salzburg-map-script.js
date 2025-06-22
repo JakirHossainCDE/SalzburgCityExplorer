@@ -117,7 +117,7 @@ const poisGeoJSONData = {
     ]
 };
 
-const salzachTouristWalkGeoJSONData = {
+const salzachRiverWalkGeoJSONData = {
     "type": "FeatureCollection",
     "features": [
         {
@@ -131,22 +131,17 @@ const salzachTouristWalkGeoJSONData = {
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
-                    [13.0480, 47.804742], // Near Staatsbrücke
-                    [13.047786, 47.804025],
+                    [13.0495, 47.8047], // Near Staatsbrücke
+                    [13.0480, 47.8041],
                     [13.0450, 47.8020], // Near Mozartsteg
                     [13.0440, 47.8000], // Near Makartsteg
                     [13.0430, 47.7980], // Near Müllnersteg
-                    [13.046878, 47.797470]  // South of Old Town
+                    [13.0458, 47.7978]  // South of Old Town
                 ]
             }
         }
     ]
 };
-
-
-
-
-
 
 const oldTownAreaGeoJSONData = {
     "type": "FeatureCollection",
