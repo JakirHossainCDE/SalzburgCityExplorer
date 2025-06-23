@@ -33,8 +33,17 @@ const iconProperties = {
 // --- Global Variables to Store Map Elements and State ---
 let attractionMarkers = [];
 let routeControl = null;
-let selectedAttractions = [];
-let currentCityData = null;
+let selectedAttractions = []; // Stores IDs of selected attractions
+let currentCityData = null; // Stores data for the currently loaded city (Salzburg)
+
+// For Route Animation:
+let currentRouteGeometry = []; // Stores the Leaflet LatLng coordinates of the optimized route
+let animationInterval = null; // Stores the interval ID for controlling the animation loop
+let currentAnimationIndex = 0; // Tracks the current point in the route geometry for animation
+let animatedRoutePoint = null; // The Leaflet marker (red point) that moves along the route
+
+// For Attractions Slider:
+let numAttractionsToShow = 10; // Default number of attractions to display in the list
 
 // --- Mock City Data for Salzburg ---
 const cityDatabase = {
@@ -295,6 +304,30 @@ L.control.layers(baseLayers, overlayLayers, { collapsed: false }).addTo(map);
 
 // --- Core Application Functions ---
 /**
+ * Displays a custom message in an overlay.
+ * @param {string} message - The message text to display.
+ * @param {string} type - Optional: 'success', 'warning', 'error' for different styling (not implemented here, but good practice).
+ */
+function displayMessage(message, type = 'info') {
+    const messageOverlay = document.getElementById('message-overlay');
+    const messageText = document.getElementById('message-text');
+    
+    messageText.textContent = message;
+    messageOverlay.classList.remove('hidden'); // Show the message overlay
+
+    // Optional: Add/remove type classes for styling if needed
+    // messageBox.className = 'message-box ' + type;
+}
+
+/**
+ * Hides the custom message overlay.
+ */
+function hideMessage() {
+    const messageOverlay = document.getElementById('message-overlay');
+    messageOverlay.classList.add('hidden'); // Hide the message overlay
+}
+
+/**
  * Loads city data based on the provided city key and populates the map and attraction list.
  * @param {string} cityKey - The key for the city data in the cityDatabase.
  */
@@ -307,19 +340,49 @@ function loadCityData(cityKey) {
     currentCityData = cityDatabase[cityKey];
     if (!currentCityData) {
         hideLoading();
-        // Use a custom modal or message box instead of alert()
-        console.error("City not found in our database. Please try 'Salzburg'.");
-        // Example: displayMessage("City not found in our database. Please try 'Salzburg'.");
+        displayMessage("City not found in our database. Please try 'Salzburg'.");
         return;
     }
     
     map.setView(currentCityData.center, currentCityData.zoom);
+
+    // Initialize the attractions slider's max value based on total attractions
+    const attractionsRange = document.getElementById('attractions-range');
+    if (attractionsRange) {
+        attractionsRange.max = currentCityData.attractions.length;
+        // Set initial value if not already set, e.g., to default numAttractionsToShow
+        if (!attractionsRange.value || parseInt(attractionsRange.value) === 0) {
+            attractionsRange.value = numAttractionsToShow;
+        }
+        document.getElementById('num-attractions-display').textContent = attractionsRange.value;
+    }
     
+    // Call the function to display attractions based on current slider value
+    updateAttractionsListDisplay();
+    
+    document.getElementById('route-name').textContent = `${currentCityData.name} Highlights`;
+    
+    hideLoading();
+}
+
+/**
+ * Updates the display of attractions in the control panel based on `numAttractionsToShow`.
+ * Also adds markers to the map for these attractions.
+ */
+function updateAttractionsListDisplay() {
+    // Remove all existing attraction markers from the map before re-adding
+    attractionMarkers.forEach(marker => map.removeLayer(marker));
+    attractionMarkers = []; // Clear the array
+
     const attractionsListDiv = document.getElementById('attractions-list');
     attractionsListDiv.innerHTML = ''; // Clear previous list items
+
+    // Get the top N attractions based on the slider value
+    // Ensure attractions are sorted by ID or some consistent order if you want "top" to be stable
+    const sortedAttractions = [...currentCityData.attractions].sort((a, b) => a.id - b.id);
+    const attractionsToDisplay = sortedAttractions.slice(0, numAttractionsToShow);
     
-    // Iterate through attractions and add markers to map and list items to panel
-    currentCityData.attractions.forEach(attraction => {
+    attractionsToDisplay.forEach(attraction => {
         // Create Leaflet marker with custom icon
         const marker = L.marker([attraction.lat, attraction.lng], {
             icon: L.divIcon({
@@ -340,13 +403,17 @@ function loadCityData(cityKey) {
         // Create attraction item for the control panel list
         const attractionItem = document.createElement('div');
         attractionItem.className = 'attraction-item';
+        // Add 'selected' class if this attraction was previously selected (from `selectedAttractions` array)
+        if (selectedAttractions.includes(attraction.id)) {
+            attractionItem.classList.add('selected');
+        }
         attractionItem.innerHTML = `
-            <div class="attraction-icon"><i class="fas fa-${iconProperties[attraction.icon].icon}"></i></div>
+            <div class="attraction-icon"><i class="fas ${iconProperties[attraction.icon].icon}"></i></div>
             <div class="attraction-details">
                 <div class="attraction-name">${attraction.name}</div>
                 <div class="attraction-category">${attraction.category}</div>
             </div>
-            <div><i class="fas fa-plus"></i></div>
+            <div><i class="fas ${selectedAttractions.includes(attraction.id) ? 'fa-check' : 'fa-plus'}"></i></div>
         `;
         
         // Add click listener to toggle selection
@@ -356,11 +423,16 @@ function loadCityData(cityKey) {
         
         attractionsListDiv.appendChild(attractionItem);
     });
-    
-    document.getElementById('route-name').textContent = `${currentCityData.name} Highlights`;
-    
-    hideLoading();
+    // Ensure currently selected attractions are still pulsing if they are visible
+    attractionMarkers.forEach(marker => {
+        if (selectedAttractions.includes(marker.attractionData.id)) {
+            marker._icon.classList.add('pulsing');
+        } else {
+            marker._icon.classList.remove('pulsing');
+        }
+    });
 }
+
 
 /**
  * Toggles the selection state of an attraction for route planning.
@@ -370,17 +442,26 @@ function loadCityData(cityKey) {
 function toggleAttractionSelection(attractionId, element) {
     const index = selectedAttractions.indexOf(attractionId);
     const icon = element.querySelector('.fa-plus, .fa-check');
-    
+    const marker = attractionMarkers.find(m => m.attractionData.id === attractionId); // Find the corresponding marker
+
     if (index === -1) {
         selectedAttractions.push(attractionId);
         icon.classList.remove('fa-plus');
         icon.classList.add('fa-check');
         element.classList.add('selected'); // Add visual selected class
+
+        if (marker) {
+            marker._icon.classList.add('pulsing'); // Add pulsing class to the marker's div icon
+        }
     } else {
         selectedAttractions.splice(index, 1);
         icon.classList.remove('fa-check');
         icon.classList.add('fa-plus');
         element.classList.remove('selected'); // Remove visual selected class
+
+        if (marker) {
+            marker._icon.classList.remove('pulsing'); // Remove pulsing class
+        }
     }
     
     updateRouteInfo(); // Update the displayed route information
@@ -410,7 +491,7 @@ function clearMapAttractions() {
         routeControl = null;
     }
     
-    // Clear the attraction list in the control panel
+    // Clear the attraction list in the control panel (will be repopulated by updateAttractionsListDisplay)
     document.getElementById('attractions-list').innerHTML = '';
     
     // Deselect any previously selected attraction items
@@ -428,6 +509,19 @@ function clearMapAttractions() {
     document.getElementById('route-time').textContent = '0 mins';
     document.getElementById('route-stops').textContent = '0';
     document.getElementById('route-name').textContent = 'Selected Highlights';
+
+    // Stop and reset any ongoing animation
+    if (animationInterval) {
+        clearInterval(animationInterval);
+        animationInterval = null;
+        document.getElementById('animate-route-btn').innerHTML = '<i class="fas fa-play"></i> Animate Route';
+    }
+    if (animatedRoutePoint) { // Remove the animated point if it exists
+        map.removeLayer(animatedRoutePoint);
+        animatedRoutePoint = null;
+    }
+    currentRouteGeometry = [];
+    currentAnimationIndex = 0;
 }
 
 /**
@@ -435,12 +529,21 @@ function clearMapAttractions() {
  */
 function showOptimizedRoute() {
     if (selectedAttractions.length < 2) {
-        // Use a custom modal or message box instead of alert()
-        console.warn("Please select at least 2 attractions to optimize a route.");
-        // Example: displayMessage("Please select at least 2 attractions to optimize a route.");
+        displayMessage("Please select at least 2 attractions to optimize a route.");
         return;
     }
     
+    // Stop any current animation if running before calculating new route
+    if (animationInterval) {
+        clearInterval(animationInterval);
+        animationInterval = null;
+        document.getElementById('animate-route-btn').innerHTML = '<i class="fas fa-play"></i> Animate Route';
+    }
+    if (animatedRoutePoint) {
+        map.removeLayer(animatedRoutePoint);
+        animatedRoutePoint = null;
+    }
+
     showLoading("Calculating optimal route...");
     
     // Simulate network delay for routing calculation
@@ -477,6 +580,8 @@ function showOptimizedRoute() {
                     `${(route.summary.totalDistance / 1000).toFixed(1)} km`;
                 document.getElementById('route-time').textContent = 
                     `${Math.round(route.summary.totalTime / 60)} mins`;
+
+                currentRouteGeometry = route.coordinates; // Store the route geometry for animation
             }
             hideLoading();
         });
@@ -484,9 +589,8 @@ function showOptimizedRoute() {
         // Event listener for routing errors
         routeControl.on('routingerror', function(e) {
             hideLoading();
-            console.error("Routing error:", e.error.message);
-            // Use a custom modal or message box instead of alert()
-            // Example: displayMessage("Could not calculate route. Please try again or select different attractions.");
+            console.error("Routing error:", e.error.message); // Still log error to console for debugging
+            displayMessage("Could not calculate route. Please try again or select different attractions.");
         });
         
     }, 1000); // Simulate 1 second loading time
@@ -508,6 +612,78 @@ function hideLoading() {
     document.getElementById('loading-overlay').style.display = 'none';
 }
 
+/**
+ * Animates the map view along the calculated route, displaying a red point.
+ */
+function animateRoute() {
+    if (currentRouteGeometry.length === 0) {
+        displayMessage("No route to animate. Please optimize a route first.");
+        return;
+    }
+
+    if (animationInterval) {
+        clearInterval(animationInterval); // Stop any existing animation
+        animationInterval = null;
+        if (animatedRoutePoint) { // Remove the point if pausing/stopping
+            map.removeLayer(animatedRoutePoint);
+            animatedRoutePoint = null;
+        }
+        document.getElementById('animate-route-btn').innerHTML = '<i class="fas fa-play"></i> Animate Route';
+        return; // Toggle off if already running
+    }
+
+    document.getElementById('animate-route-btn').innerHTML = '<i class="fas fa-pause"></i> Pause Animation';
+
+    currentAnimationIndex = 0; // Start from the beginning
+    const animationSpeed = 100; // Milliseconds per step (adjust for faster/slower)
+    // const originalZoomLevel = map.getZoom(); // Store original zoom to revert later or for reference
+
+    // Create the animated point marker if it doesn't exist
+    if (!animatedRoutePoint) {
+        animatedRoutePoint = L.circleMarker(currentRouteGeometry[currentAnimationIndex], {
+            radius: 7,
+            fillColor: "red",
+            color: "white",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 1,
+            className: 'animated-route-point' // Add custom class for styling
+        }).addTo(map);
+    } else {
+        // If it exists but was removed (e.g., from clearMapAttractions), add it back
+        animatedRoutePoint.setLatLng(currentRouteGeometry[currentAnimationIndex]).addTo(map);
+    }
+
+
+    animationInterval = setInterval(() => {
+        if (currentAnimationIndex < currentRouteGeometry.length) {
+            const point = currentRouteGeometry[currentAnimationIndex];
+            map.panTo(point, {
+                animate: true,
+                duration: animationSpeed / 1000, // Leaflet duration in seconds
+                easeLinearity: 0.5
+            });
+
+            // Move the animated point
+            animatedRoutePoint.setLatLng(point);
+            animatedRoutePoint.bringToFront(); // Ensure the point is always visible on top
+
+            currentAnimationIndex++;
+        } else {
+            clearInterval(animationInterval); // Stop animation when done
+            animationInterval = null;
+            document.getElementById('animate-route-btn').innerHTML = '<i class="fas fa-redo"></i> Replay Animation';
+            console.log("Route animation finished.");
+            // Remove the animated point after animation completes
+            if (animatedRoutePoint) {
+                map.removeLayer(animatedRoutePoint);
+                animatedRoutePoint = null;
+            }
+        }
+    }, animationSpeed);
+}
+
+
 // --- Event Listeners ---
 document.addEventListener('DOMContentLoaded', function() {
     // Event listener for the city search button (currently disabled/fixed to Salzburg)
@@ -516,9 +692,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (cityInput) {
             loadCityData(cityInput);
         } else {
-            // Use a custom modal or message box instead of alert()
-            console.warn("Please enter a city name.");
-            // Example: displayMessage("Please enter a city name.");
+            displayMessage("Please enter a city name.");
         }
     });
     
@@ -532,18 +706,30 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listener for the Optimize Route button
     document.getElementById('optimize-btn').addEventListener('click', showOptimizedRoute);
     
+    // Event listener for the new Animate Route button
+    document.getElementById('animate-route-btn').addEventListener('click', animateRoute);
+
     // Event listener for the Export Map button (simulated functionality)
     document.getElementById('export-btn').addEventListener('click', function() {
         if (routeControl) {
-            // Use a custom modal or message box instead of alert()
-            console.info("Map export simulated. This would typically generate a PNG or a shareable link of the map with the route.");
-            // Example: displayMessage("Map export simulated. This would typically generate a PNG or a shareable link of the map with the route.");
+            displayMessage("Map export simulated. This would typically generate a PNG or a shareable link of the map with the route.");
         } else {
-            // Use a custom modal or message box instead of alert()
-            console.warn("Please optimize a route first before attempting to export.");
-            // Example: displayMessage("Please optimize a route first before attempting to export.");
+            displayMessage("Please optimize a route first before attempting to export.");
         }
     });
+
+    // Event listener for the attractions range slider
+    const attractionsRange = document.getElementById('attractions-range');
+    if (attractionsRange) {
+        attractionsRange.addEventListener('input', function() {
+            numAttractionsToShow = parseInt(this.value);
+            document.getElementById('num-attractions-display').textContent = numAttractionsToShow;
+            updateAttractionsListDisplay(); // Re-render the attraction list
+        });
+    }
+
+    // Event listener for the message box close button
+    document.getElementById('message-close-btn').addEventListener('click', hideMessage);
 
     // Initial load of Salzburg data when the page content is fully loaded
     loadCityData('salzburg');
