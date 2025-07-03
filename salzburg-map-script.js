@@ -192,7 +192,7 @@ function stylePois(feature) {
 
 function styleRoutes(feature) {
     return {
-        color: "#4CAF50", // Green for routes
+        color: "#FFD700", // Yellow for routes
         weight: 5,
         opacity: 0.7
     };
@@ -301,6 +301,15 @@ const overlayLayers = {
 
 // Add layer control to the map, not collapsed by default
 L.control.layers(baseLayers, overlayLayers, { collapsed: false }).addTo(map);
+
+
+// Add layer control to the map, not collapsed by default
+L.control.layers(baseLayers, overlayLayers, { collapsed: false }).addTo(map);
+
+// Add a scale bar to the map
+L.control.scale().addTo(map);
+
+
 
 // --- Core Application Functions ---
 /**
