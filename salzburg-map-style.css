@@ -469,3 +469,43 @@ body {
     vertical-align: middle;
     margin-right: 5px;
 }
+
+
+
+/* --- Legend Control Styling --- */
+.legend-control {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    line-height: 1.5;
+}
+
+.legend-control h4 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.legend-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white; /* Icon color */
+    border-radius: 3px;
+    margin-right: 8px;
+    font-size: 12px;
+}
+
+.legend-label {
+    font-size: 14px;
+}
