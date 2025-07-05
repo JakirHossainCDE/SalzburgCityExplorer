@@ -303,8 +303,6 @@ const overlayLayers = {
 L.control.layers(baseLayers, overlayLayers, { collapsed: false }).addTo(map);
 
 
-// Add layer control to the map, not collapsed by default
-L.control.layers(baseLayers, overlayLayers, { collapsed: false }).addTo(map);
 
 // Add a scale bar to the map
 L.control.scale().addTo(map);
