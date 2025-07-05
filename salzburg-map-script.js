@@ -309,6 +309,44 @@ L.control.scale().addTo(map);
 
 
 
+// --- Custom Legend Control ---
+const legend = L.control({ position: 'bottomright' }); // Position in the bottom left corner
+
+legend.onAdd = function (map) {
+    // Create the main div for the legend with a specific class
+    const div = L.DomUtil.create('div', 'info legend legend-control');
+    div.innerHTML += '<h4>Attraction Legend</h4>';
+
+    // Loop through our iconProperties object to generate legend items
+    for (const key in iconProperties) {
+        if (iconProperties.hasOwnProperty(key)) {
+            const properties = iconProperties[key];
+            const categoryName = key.charAt(0).toUpperCase() + key.slice(1); // Capitalize the category name
+
+            // Create a div for each legend item
+            div.innerHTML +=
+                `<div class="legend-item">
+                    <div class="legend-icon" style="background-color: ${properties.color};">
+                        <i class="fas fa-${properties.icon}"></i>
+                    </div>
+                    <span class="legend-label">${categoryName}</span>
+                </div>`;
+        }
+    }
+    
+    // Disable map interactions (like click and drag) on the legend so it doesn't interfere
+    L.DomEvent.disableClickPropagation(div);
+    
+    return div;
+};
+
+
+// Add the legend control to the map
+legend.addTo(map);
+
+
+
+
 // --- Core Application Functions ---
 /**
  * Displays a custom message in an overlay.
