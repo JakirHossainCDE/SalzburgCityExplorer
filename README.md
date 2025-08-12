@@ -3,7 +3,9 @@
 This project delivers an interactive web map focused on the city of Salzburg, Austria, utilizing the Leaflet JavaScript library. It is designed to be easily consumable and explorable, allowing users to interact with and understand key geographical information about Salzburg within a single-page application (SPA).
 
 ---
+<img width="1366" height="681" alt="image" src="https://github.com/user-attachments/assets/c60b5d9d-0a07-444f-95de-ee71f3622e19" />
 
+Demo : https://jakirhossaincde.github.io/SalzburgCityExplorer/
 ## Table of Contents
 
 1. [Target User](#1-target-user)  
