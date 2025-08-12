@@ -157,7 +157,7 @@ This project showcased:
 
 ## License
 
-This is a prototype and intended for educational purposes only. All data is mock or illustrative.
+This is a prototype and intended for educational purposes only. 
 
 ---
 
