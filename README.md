@@ -1,4 +1,4 @@
-# Salzburg Interactive Map Project
+# 🌍 Salzburg Interactive Map Project
 
 This project delivers an interactive web map focused on the city of Salzburg, Austria, utilizing the Leaflet JavaScript library. It is designed to be easily consumable and explorable, allowing users to interact with and understand key geographical information about Salzburg within a single-page application (SPA).
 
