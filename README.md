@@ -1,4 +1,6 @@
 # 🌍 Salzburg Interactive Map Project
+[![Live Demo](https://img.shields.io/badge/Demo-Live_Map-brightgreen?style=for-the-badge)](https://jakirhossaincde.github.io/SalzburgCityExplorer/)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 This project delivers an interactive web map focused on the city of Salzburg, Austria, utilizing the Leaflet JavaScript library. It is designed to be easily consumable and explorable, allowing users to interact with and understand key geographical information about Salzburg within a single-page application (SPA).
 
